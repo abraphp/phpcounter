@@ -3,16 +3,47 @@ return array(
     'router' => array(
         'routes' => array(
             'home' => array(
-                'type'    => 'Segment',
+                'type' => 'Segment',
                 'options' => array(
-                    'route'    => '/[:controller[/][/:action][/]]',
+                    'route'    => '/[page/:page]',
                     'defaults' => array(
-                        '__NAMESPACE__' => 'Application\Controller',
-                        'controller' => 'Index',
+                        'controller' => 'Application\Controller\Index',
                         'action'     => 'index',
+                        'module'     => 'application',
+                    ),
+                ),
+            ),
+            'application' => array(
+                'type'    => 'Literal',
+                'options' => array(
+                    'route'    => '/application',
+                    'defaults' => array(
+                        'controller'    => 'Index',
+                        'action'        => 'index',
+                        '__NAMESPACE__' => 'Application\Controller',
+                        'module'     => 'application'
                     ),
                 ),
                 'may_terminate' => true,
+                'child_routes' => array(
+                    'default' => array(
+                        'type'    => 'Segment',
+                        'options' => array(
+                            'route'    => '/[:controller[/:action]]',
+                            'constraints' => array(
+                                'controller' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                                'action'     => '[a-zA-Z][a-zA-Z0-9_-]*',
+                            ),
+                            'defaults' => array(
+                            ),
+                        ),
+                        'child_routes' => array( //permite mandar dados pela url 
+                            'wildcard' => array(
+                                'type' => 'Wildcard'
+                            ),
+                        ),
+                    ),
+                ),
             ),
         ),
     ),
