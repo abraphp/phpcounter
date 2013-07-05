@@ -50,6 +50,76 @@ return array(
     'service_manager' => array(
         'factories' => array(
             'translator' => 'Zend\I18n\Translator\TranslatorServiceFactory',
+            'Session' => function($sm) {
+                return new \Zend\Session\Container('PHPCounter');
+            },
+            'Cache' => function($sm) {
+                $config = $sm->get('Configuration');
+                $cache = \Zend\Cache\StorageFactory::factory(
+                    array(
+                        'adapter' => $config['cache']['adapter'],
+                        'plugins' => array(
+                            'exception_handler' => array('throw_exceptions' => false),
+                            'Serializer'
+                        ),
+                    )
+                );
+
+                return $cache;
+            },
+            'Log' => function($sm) {
+                    $writer = new \Zend\Log\Writer\Stream('/tmp/phpcounter.log');
+                    $logger = new \Zend\Log\Logger();
+                    $logger->addWriter($writer);
+                    return $logger;
+            },
+            'EntityManager' => function($sm) {
+                $env = getenv('ENV');
+                $config = $sm->get('Configuration');
+
+                if ($env == 'testing') {
+                    $config = include getenv('PROJECT_ROOT') . '/config/test.config.php';
+                }
+                $doctrineConfig = new \Doctrine\ORM\Configuration();
+                $cache = new $config['doctrine']['driver']['cache'];
+                $doctrineConfig->setQueryCacheImpl($cache);
+                $doctrineConfig->setProxyDir('/tmp');
+                $doctrineConfig->setProxyNamespace('EntityProxy');
+                $doctrineConfig->setAutoGenerateProxyClasses(true);
+
+                \Doctrine\Common\Annotations\AnnotationReader::addGlobalIgnoredName('events');
+
+                \Doctrine\Common\Annotations\AnnotationRegistry::registerFile(
+                    getenv('PROJECT_ROOT'). '/vendor/doctrine/orm/lib/Doctrine/ORM/Mapping/Driver/DoctrineAnnotations.php'
+                );
+                \Doctrine\Common\Annotations\AnnotationRegistry::registerFile(
+                    getenv('PROJECT_ROOT'). '/vendor/jms/serializer/src/JMS/Serializer/Annotation/Groups.php'
+                );
+                \Doctrine\Common\Annotations\AnnotationRegistry::registerFile(
+                    getenv('PROJECT_ROOT'). '/vendor/jms/serializer/src/JMS/Serializer/Annotation/Type.php'
+                );
+                \Doctrine\Common\Annotations\AnnotationRegistry::registerFile(
+                    getenv('PROJECT_ROOT'). '/vendor/jms/serializer/src/JMS/Serializer/Annotation/Accessor.php'
+                );
+
+                $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver(
+                    new \Doctrine\Common\Annotations\AnnotationReader(),
+                    $config['doctrine']['driver']['paths']
+                );
+                $doctrineConfig->setMetadataDriverImpl($driver);
+                $doctrineConfig->setMetadataCacheImpl($cache);
+
+                $em = \Doctrine\ORM\EntityManager::create(
+                    $config['doctrine']['connection'],
+                    $doctrineConfig
+                );
+                //subscriber
+                $evm = $em->getEventManager();
+                $entitySubscriber = $sm->get('Application\Model\Subscriber\EntitySubscriber');
+                $evm->addEventSubscriber($entitySubscriber);
+                
+                return $em;
+            },
         ),
     ),
     'translator' => array(
