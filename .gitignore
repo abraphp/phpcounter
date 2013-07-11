@@ -1,2 +1,7 @@
 nbproject/
 config/autoload/local.php
+
+# Eclipse project files
+.settings/
+.buildpath
+.project
