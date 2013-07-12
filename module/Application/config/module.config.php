@@ -5,7 +5,7 @@ return array(
             'home' => array(
                 'type' => 'Segment',
                 'options' => array(
-                    'route'    => '/[page/:page]',
+                    'route'    => '/[:page]',
                     'defaults' => array(
                         'controller' => 'Application\Controller\Index',
                         'action'     => 'index',
